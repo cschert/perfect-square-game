@@ -18,7 +18,11 @@ const differenceText = document.getElementById("differenceText");
 
 const classicModeBtn = document.getElementById("classicModeBtn");
 const rectangleModeBtn = document.getElementById("rectangleModeBtn");
+const gauntletModeBtn = document.getElementById("gauntletModeBtn");
 const modeInstructions = document.getElementById("modeInstructions");
+
+const scoreLabel = scoreDisplay.previousElementSibling;
+const finalScoreLabel = finalScoreDisplay.previousElementSibling;
 
 let currentMode = "classic";
 
@@ -31,7 +35,17 @@ let timeLeft = 10;
 let timer = null;
 
 const GAME_TIME_SECONDS = 10;
+const GAUNTLET_START_TIME_SECONDS = 5;
+const GAUNTLET_MIN_TIME_SECONDS = 1;
 const MIN_SIDE_PIXELS = 80;
+const GAUNTLET_TARGETS = [80, 85, 90, 95, 96, 97, 98, 99];
+
+let gauntletScore = 0;
+let gauntletTargetIndex = 0;
+let gauntletCurrentTimeLimit = GAUNTLET_START_TIME_SECONDS;
+
+const gauntletTargetDisplay = createGauntletTargetDisplay();
+injectGauntletTargetStyles();
 
 startBtn.addEventListener("click", () => {
   startGame();
@@ -45,11 +59,81 @@ rectangleModeBtn.addEventListener("click", () => {
   switchMode("rectangle");
 });
 
+gauntletModeBtn.addEventListener("click", () => {
+  switchMode("gauntlet");
+});
+
+function createGauntletTargetDisplay() {
+  let display = document.getElementById("gauntletTargetDisplay");
+
+  if (!display) {
+    display = document.createElement("div");
+    display.id = "gauntletTargetDisplay";
+    display.classList.add("gauntlet-target", "hidden");
+    display.textContent = "80%";
+    gameArea.prepend(display);
+  }
+
+  return display;
+}
+
+function injectGauntletTargetStyles() {
+  const style = document.createElement("style");
+
+  style.textContent = `
+    .gauntlet-target {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(80px, 18vw, 180px);
+      font-weight: 900;
+      color: rgba(17, 24, 39, 0.16);
+      pointer-events: none;
+      z-index: 1;
+      user-select: none;
+    }
+
+    .gauntlet-target.hidden {
+      display: none;
+    }
+
+    .gauntlet-target.flash-target {
+      animation: targetFlash 0.35s ease;
+    }
+
+    @keyframes targetFlash {
+      0% {
+        transform: scale(0.92);
+        opacity: 0.45;
+      }
+
+      60% {
+        transform: scale(1.08);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    #rectangle {
+      z-index: 2;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 function switchMode(mode) {
   currentMode = mode;
 
   classicModeBtn.classList.remove("active-mode");
   rectangleModeBtn.classList.remove("active-mode");
+  gauntletModeBtn.classList.remove("active-mode");
 
   if (currentMode === "classic") {
     classicModeBtn.classList.add("active-mode");
@@ -63,6 +147,12 @@ function switchMode(mode) {
       "Rectangle mode: Draw a perfect 2:1 rectangle. The longer side should be exactly twice the shorter side.";
   }
 
+  if (currentMode === "gauntlet") {
+    gauntletModeBtn.classList.add("active-mode");
+    modeInstructions.textContent =
+      "Square Gauntlet: Start at 80% perfection and climb through 85%, 90%, 95%, 96%, 97%, 98%, and 99%. You have 5 seconds per square.";
+  }
+
   resetRoundDisplay();
 }
 
@@ -74,46 +164,86 @@ function getCurrentModeName() {
   return "square";
 }
 
+function getCurrentTimeLimit() {
+  if (currentMode === "gauntlet") {
+    return gauntletCurrentTimeLimit;
+  }
+
+  return GAME_TIME_SECONDS;
+}
+
+function getGauntletTarget() {
+  return GAUNTLET_TARGETS[gauntletTargetIndex];
+}
+
+function updateGauntletTargetDisplay() {
+  if (currentMode !== "gauntlet") {
+    hideGauntletTargetDisplay();
+    return;
+  }
+
+  gauntletTargetDisplay.classList.remove("hidden");
+  gauntletTargetDisplay.textContent = getGauntletTarget() + "%";
+
+  gauntletTargetDisplay.classList.remove("flash-target");
+
+  requestAnimationFrame(() => {
+    gauntletTargetDisplay.classList.add("flash-target");
+  });
+}
+
+function hideGauntletTargetDisplay() {
+  gauntletTargetDisplay.classList.add("hidden");
+  gauntletTargetDisplay.classList.remove("flash-target");
+}
+
 function startGame() {
   isPlaying = true;
   isDrawing = false;
   hasFinishedRound = false;
-  timeLeft = GAME_TIME_SECONDS;
 
-  scoreDisplay.textContent = "--";
-  finalScoreDisplay.textContent = "--";
-  timeDisplay.textContent = timeLeft.toFixed(1);
-
-  if (currentMode === "classic") {
-    message.textContent = "Draw your square!";
-  } else {
-    message.textContent = "Draw your 2:1 rectangle!";
+  if (currentMode === "gauntlet") {
+    gauntletScore = 0;
+    gauntletTargetIndex = 0;
+    gauntletCurrentTimeLimit = GAUNTLET_START_TIME_SECONDS;
   }
 
-  dimensions.textContent = "";
+  startRoundTimer(getCurrentTimeLimit());
+  resetShapeAndComparison();
 
-  rectangle.classList.remove("rectangle-fade");
-  rectangle.style.display = "none";
-  rectangle.style.opacity = "1";
-  rectangle.style.width = "0px";
-  rectangle.style.height = "0px";
+  scoreDisplay.textContent = "--";
 
-  comparison.classList.add("hidden");
+  if (currentMode === "gauntlet") {
+    scoreLabel.textContent = "Perfection";
+    finalScoreLabel.textContent = "Gauntlet Score";
+    finalScoreDisplay.textContent = gauntletScore;
+    message.textContent = `Square Gauntlet: Hit at least ${getGauntletTarget()}% perfection.`;
+    dimensions.textContent = `Target: ${getGauntletTarget()}% | Time limit: ${gauntletCurrentTimeLimit.toFixed(1)}s`;
+    updateGauntletTargetDisplay();
+  } else {
+    hideGauntletTargetDisplay();
 
-  widthLine.style.width = "0px";
-  heightLine.style.width = "0px";
-  widthLine.style.opacity = "0";
-  heightLine.style.opacity = "0";
+    scoreLabel.textContent = "Perfection";
+    finalScoreLabel.textContent = "Leaderboard Score";
+    finalScoreDisplay.textContent = "--";
 
-  widthValue.textContent = "0px";
-  heightValue.textContent = "0px";
-  differenceText.textContent = "";
+    if (currentMode === "classic") {
+      message.textContent = "Draw your square!";
+    } else {
+      message.textContent = "Draw your 2:1 rectangle!";
+    }
 
-  removeOldFloatingLines();
+    dimensions.textContent = "";
+  }
 
   startBtn.textContent = "Restart";
+}
 
+function startRoundTimer(seconds) {
   clearInterval(timer);
+
+  timeLeft = seconds;
+  timeDisplay.textContent = timeLeft.toFixed(1);
 
   timer = setInterval(() => {
     timeLeft -= 0.1;
@@ -125,19 +255,7 @@ function startGame() {
   }, 100);
 }
 
-function resetRoundDisplay() {
-  isPlaying = false;
-  isDrawing = false;
-  hasFinishedRound = false;
-
-  clearInterval(timer);
-
-  timeLeft = GAME_TIME_SECONDS;
-  timeDisplay.textContent = timeLeft.toFixed(1);
-  scoreDisplay.textContent = "--";
-  finalScoreDisplay.textContent = "--";
-  dimensions.textContent = "";
-
+function resetShapeAndComparison() {
   rectangle.classList.remove("rectangle-fade");
   rectangle.style.display = "none";
   rectangle.style.opacity = "1";
@@ -156,15 +274,50 @@ function resetRoundDisplay() {
   differenceText.textContent = "";
 
   removeOldFloatingLines();
+}
+
+function resetRoundDisplay() {
+  isPlaying = false;
+  isDrawing = false;
+  hasFinishedRound = false;
+
+  clearInterval(timer);
+
+  if (currentMode === "gauntlet") {
+    gauntletScore = 0;
+    gauntletTargetIndex = 0;
+    gauntletCurrentTimeLimit = GAUNTLET_START_TIME_SECONDS;
+    timeLeft = gauntletCurrentTimeLimit;
+    scoreLabel.textContent = "Perfection";
+    finalScoreLabel.textContent = "Gauntlet Score";
+    finalScoreDisplay.textContent = "0";
+    message.textContent =
+      "Press Start Game, then survive the Square Gauntlet. First target: 80%.";
+    dimensions.textContent = "Pass each square to move instantly to the next target.";
+    updateGauntletTargetDisplay();
+  } else {
+    hideGauntletTargetDisplay();
+
+    timeLeft = GAME_TIME_SECONDS;
+    scoreLabel.textContent = "Perfection";
+    finalScoreLabel.textContent = "Leaderboard Score";
+    finalScoreDisplay.textContent = "--";
+    dimensions.textContent = "";
+
+    if (currentMode === "classic") {
+      message.textContent = "Press Start Game, then draw the most perfect square you can.";
+    } else {
+      message.textContent =
+        "Press Start Game, then draw a 2:1 rectangle. The longer side should be twice the shorter side.";
+    }
+  }
+
+  timeDisplay.textContent = timeLeft.toFixed(1);
+  scoreDisplay.textContent = "--";
+
+  resetShapeAndComparison();
 
   startBtn.textContent = "Start Game";
-
-  if (currentMode === "classic") {
-    message.textContent = "Press Start Game, then draw the most perfect square you can.";
-  } else {
-    message.textContent =
-      "Press Start Game, then draw a 2:1 rectangle. The longer side should be twice the shorter side.";
-  }
 }
 
 function endGameFromTimer() {
@@ -173,7 +326,12 @@ function endGameFromTimer() {
   isDrawing = false;
 
   if (!hasFinishedRound) {
-    message.textContent = "Time is up! Press Restart or drag again to try again.";
+    if (currentMode === "gauntlet") {
+      message.textContent = `Time is up! Final Gauntlet Score: ${gauntletScore}.`;
+      dimensions.textContent = `You reached the ${getGauntletTarget()}% target. Press Restart or drag again to retry.`;
+    } else {
+      message.textContent = "Time is up! Press Restart or drag again to try again.";
+    }
   }
 }
 
@@ -211,7 +369,10 @@ function beginDrawing(event) {
   differenceText.textContent = "";
   dimensions.textContent = "";
   scoreDisplay.textContent = "--";
-  finalScoreDisplay.textContent = "--";
+
+  if (currentMode !== "gauntlet") {
+    finalScoreDisplay.textContent = "--";
+  }
 
   removeOldFloatingLines();
 
@@ -262,11 +423,15 @@ function finishDrawing() {
     message.textContent = `Too small! Make the shorter side at least ${MIN_SIDE_PIXELS}px. Keep going.`;
     dimensions.textContent = `Current attempt: ${width.toFixed(2)}px × ${height.toFixed(2)}px`;
     scoreDisplay.textContent = "--";
-    finalScoreDisplay.textContent = "--";
 
     rectangle.style.display = "none";
     comparison.classList.add("hidden");
 
+    return;
+  }
+
+  if (currentMode === "gauntlet") {
+    finishGauntletAttempt(width, height);
     return;
   }
 
@@ -278,7 +443,7 @@ function finishDrawing() {
   const speedScore = calculateSpeedScore(timeLeft);
   const leaderboardScore = calculateLeaderboardScore(perfectionScore, speedScore);
 
-  const timeUsed = GAME_TIME_SECONDS - Math.max(timeLeft, 0);
+  const timeUsed = getCurrentTimeLimit() - Math.max(timeLeft, 0);
 
   scoreDisplay.textContent = perfectionScore.toFixed(3) + "%";
   finalScoreDisplay.textContent = leaderboardScore.toFixed(3);
@@ -289,6 +454,60 @@ function finishDrawing() {
   setResultMessage(perfectionScore, leaderboardScore);
   prepareComparisonPanel(width, height, speedScore, leaderboardScore);
   animateRectangleBreakApart(drawnRect, width, height);
+}
+
+function finishGauntletAttempt(width, height) {
+  const perfectionScore = calculateSquareScore(width, height);
+  const target = getGauntletTarget();
+
+  scoreDisplay.textContent = perfectionScore.toFixed(3) + "%";
+
+  if (perfectionScore >= target) {
+    gauntletScore += 1;
+    finalScoreDisplay.textContent = gauntletScore;
+
+    advanceGauntletTarget();
+    updateGauntletTargetDisplay();
+
+    message.textContent =
+      `Passed with ${perfectionScore.toFixed(3)}%! Next target: ${getGauntletTarget()}%.`;
+
+    dimensions.textContent =
+      `Gauntlet Score: ${gauntletScore} | Time limit: ${gauntletCurrentTimeLimit.toFixed(1)}s`;
+
+    rectangle.style.display = "none";
+    comparison.classList.add("hidden");
+    removeOldFloatingLines();
+
+    startRoundTimer(gauntletCurrentTimeLimit);
+    isPlaying = true;
+    isDrawing = false;
+    hasFinishedRound = false;
+
+    return;
+  }
+
+  clearInterval(timer);
+  isPlaying = false;
+  hasFinishedRound = true;
+
+  message.textContent =
+    `Gauntlet over. You needed ${target}% but got ${perfectionScore.toFixed(3)}%. Final score: ${gauntletScore}.`;
+
+  dimensions.textContent =
+    `Final Gauntlet Score: ${gauntletScore} | Last target: ${target}% | Press Restart or drag again to retry.`;
+}
+
+function advanceGauntletTarget() {
+  if (gauntletTargetIndex < GAUNTLET_TARGETS.length - 1) {
+    gauntletTargetIndex += 1;
+    return;
+  }
+
+  gauntletCurrentTimeLimit = Math.max(
+    GAUNTLET_MIN_TIME_SECONDS,
+    gauntletCurrentTimeLimit - 0.5
+  );
 }
 
 function calculateModeScore(width, height) {
@@ -329,7 +548,7 @@ function calculateRectangleScore(width, height) {
 
 function calculateSpeedScore(timeRemaining) {
   const safeTimeRemaining = Math.max(timeRemaining, 0);
-  return (safeTimeRemaining / GAME_TIME_SECONDS) * 100;
+  return (safeTimeRemaining / getCurrentTimeLimit()) * 100;
 }
 
 function calculateLeaderboardScore(perfectionScore, speedScore) {
