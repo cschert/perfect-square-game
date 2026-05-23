@@ -1,66 +1,79 @@
-<div class="app">
-  <h1>Perfect Square</h1>
-  <p class="subtitle">Click and drag to draw the most perfect square you can.</p>
-  
-  <div class="mode-tabs">
-  <button id="classicModeBtn" class="mode-btn active-mode">Classic</button>
-  <button id="rectangleModeBtn" class="mode-btn">Rectangle</button>
-  <button id="gauntletModeBtn" class="mode-btn">Square Gauntlet</button>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfect Square</title>
 
-<p id="modeInstructions" class="mode-instructions">
-  Classic mode: Draw the most perfect square you can. Width and height should match.
-</p>
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+</head>
 
-  <div class="top-bar">
-    <div class="stat">
-      <span>Time</span>
-      <strong id="time">10.0</strong>
+<body>
+  <div class="app">
+    <h1>Perfect Square</h1>
+    <p class="subtitle">Click and drag to draw the most perfect square you can.</p>
+
+    <div class="mode-tabs">
+      <button id="classicModeBtn" class="mode-btn active-mode">Classic</button>
+      <button id="rectangleModeBtn" class="mode-btn">Rectangle</button>
+      <button id="gauntletModeBtn" class="mode-btn">Square Gauntlet</button>
     </div>
 
-    <div class="stat">
-  <span>Perfection</span>
-  <strong id="score">--</strong>
-</div>
+    <p id="modeInstructions" class="mode-instructions">
+      Classic mode: Draw the most perfect square you can. Width and height should match.
+    </p>
 
-<div class="stat">
-  <span>Leaderboard Score</span>
-  <strong id="finalScore">--</strong>
-</div>
-    
-    <button id="startBtn">Start Game</button>
-  </div>
-
-  <div id="gameArea">
-  <div id="gauntletTargetDisplay" class="gauntlet-target hidden">80%</div>
-  <div id="rectangle"></div>
-</div>
-
-  <div class="results">
-    <p id="message">Press Start Game, then click and drag inside the box.</p>
-    <p id="dimensions"></p>
-
-    <div id="comparison" class="comparison hidden">
-      <h2>Side Length Comparison</h2>
-
-      <div class="line-row">
-        <span class="line-label">Width</span>
-        <div id="widthTrack" class="line-track">
-          <div id="widthLine" class="compare-line width-line"></div>
-        </div>
-        <span id="widthValue" class="line-value">0px</span>
+    <div class="top-bar">
+      <div class="stat">
+        <span>Time</span>
+        <strong id="time">10.0</strong>
       </div>
 
-      <div class="line-row">
-        <span class="line-label">Height</span>
-        <div id="heightTrack" class="line-track">
-          <div id="heightLine" class="compare-line height-line"></div>
-        </div>
-        <span id="heightValue" class="line-value">0px</span>
+      <div class="stat">
+        <span>Perfection</span>
+        <strong id="score">--</strong>
       </div>
 
-      <p id="differenceText"></p>
+      <div class="stat">
+        <span>Leaderboard Score</span>
+        <strong id="finalScore">--</strong>
+      </div>
+
+      <button id="startBtn">Start Game</button>
+    </div>
+
+    <div id="gameArea">
+      <div id="gauntletTargetDisplay" class="gauntlet-target hidden">80%</div>
+      <div id="rectangle"></div>
+    </div>
+
+    <div class="results">
+      <p id="message">Press Start Game, then click and drag inside the box.</p>
+      <p id="dimensions"></p>
+
+      <div id="comparison" class="comparison hidden">
+        <h2>Side Length Comparison</h2>
+
+        <div class="line-row">
+          <span class="line-label">Width</span>
+          <div id="widthTrack" class="line-track">
+            <div id="widthLine" class="compare-line width-line"></div>
+          </div>
+          <span id="widthValue" class="line-value">0px</span>
+        </div>
+
+        <div class="line-row">
+          <span class="line-label">Height</span>
+          <div id="heightTrack" class="line-track">
+            <div id="heightLine" class="compare-line height-line"></div>
+          </div>
+          <span id="heightValue" class="line-value">0px</span>
+        </div>
+
+        <p id="differenceText"></p>
+      </div>
     </div>
   </div>
-</div>
-
+</body>
+</html>
