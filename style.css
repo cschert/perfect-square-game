@@ -5,7 +5,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: "Trebuchet MS", Verdana, Tahoma, sans-serif;
   background: #111827;
   color: white;
   display: flex;
@@ -26,6 +26,42 @@ h1 {
 .subtitle {
   margin-top: 0;
   color: #cbd5e1;
+}
+
+.mode-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 0 8px;
+  flex-wrap: wrap;
+}
+
+.mode-btn {
+  background: #1f2937;
+  color: #e5e7eb;
+  border: 1px solid #4b5563;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: "Trebuchet MS", Verdana, Tahoma, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.mode-btn:hover {
+  background: #374151;
+}
+
+.active-mode {
+  background: #22c55e;
+  color: #052e16;
+  border-color: #22c55e;
+}
+
+.mode-instructions {
+  color: #cbd5e1;
+  margin-top: 8px;
+  font-size: 16px;
 }
 
 .top-bar {
@@ -65,6 +101,7 @@ button {
   font-weight: bold;
   border-radius: 12px;
   cursor: pointer;
+  font-family: "Trebuchet MS", Verdana, Tahoma, sans-serif;
 }
 
 button:hover {
@@ -88,6 +125,46 @@ button:hover {
   display: none;
   border: 3px solid #2563eb;
   background: rgba(37, 99, 235, 0.18);
+  z-index: 2;
+}
+
+.gauntlet-target {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(80px, 18vw, 180px);
+  font-weight: 900;
+  color: rgba(17, 24, 39, 0.16);
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
+.gauntlet-target.hidden {
+  display: none;
+}
+
+.gauntlet-target.flash-target {
+  animation: targetFlash 0.35s ease;
+}
+
+@keyframes targetFlash {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.45;
+  }
+
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .results {
@@ -138,6 +215,7 @@ button:hover {
 }
 
 .line-track {
+  position: relative;
   height: 18px;
   background: #111827;
   border-radius: 999px;
@@ -178,8 +256,7 @@ button:hover {
   border-radius: 999px;
   box-shadow: 0 0 14px rgba(255, 255, 255, 0.35);
   transform-origin: center;
-  will-change: left, top, transform, opacity;
-}
+  will-change: left, top, width, height, transform, opacity;
   transition:
     left 0.85s ease,
     top 0.85s ease,
@@ -211,47 +288,6 @@ button:hover {
   }
 }
 
-body,
-button {
-  font-family: "Trebuchet MS", Verdana, Tahoma, sans-serif;
-}
-
-.mode-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 18px 0 8px;
-}
-
-.mode-btn {
-  background: #1f2937;
-  color: #e5e7eb;
-  border: 1px solid #4b5563;
-  padding: 10px 18px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.mode-btn:hover {
-  background: #374151;
-}
-
-.active-mode {
-  background: #22c55e;
-  color: #052e16;
-  border-color: #22c55e;
-}
-
-.mode-instructions {
-  color: #cbd5e1;
-  margin-top: 8px;
-  font-size: 16px;
-}
-
-.line-track {
-  position: relative;
-}
-
 .doubling-segment {
   position: absolute;
   left: 0;
@@ -266,43 +302,4 @@ button {
   transition:
     width 0.85s cubic-bezier(0.2, 0.9, 0.2, 1.2),
     opacity 0.2s ease;
-}
-
-.gauntlet-target {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(80px, 18vw, 180px);
-  font-weight: 900;
-  color: rgba(17, 24, 39, 0.16);
-  pointer-events: none;
-  z-index: 1;
-  user-select: none;
-}
-
-.gauntlet-target.flash-target {
-  animation: targetFlash 0.35s ease;
-}
-
-@keyframes targetFlash {
-  0% {
-    transform: scale(0.92);
-    opacity: 0.45;
-  }
-
-  60% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-#rectangle {
-  z-index: 2;
 }
