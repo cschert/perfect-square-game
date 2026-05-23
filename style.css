@@ -267,3 +267,42 @@ button {
     width 0.85s cubic-bezier(0.2, 0.9, 0.2, 1.2),
     opacity 0.2s ease;
 }
+
+.gauntlet-target {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(80px, 18vw, 180px);
+  font-weight: 900;
+  color: rgba(17, 24, 39, 0.16);
+  pointer-events: none;
+  z-index: 1;
+  user-select: none;
+}
+
+.gauntlet-target.flash-target {
+  animation: targetFlash 0.35s ease;
+}
+
+@keyframes targetFlash {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.45;
+  }
+
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+#rectangle {
+  z-index: 2;
+}
