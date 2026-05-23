@@ -1,17 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-
-  <head>
-    <meta charset="UTF-8">
-    <title>Perfect Square</title>
-    <link rel="stylesheet" href="./style.css">
-
-  </head>
-    
-  <body>
-  <div class="app">
+<div class="app">
   <h1>Perfect Square</h1>
   <p class="subtitle">Click and drag to draw the most perfect square you can.</p>
+  
+  <div class="mode-tabs">
+  <button id="classicModeBtn" class="mode-btn active-mode">Classic</button>
+  <button id="rectangleModeBtn" class="mode-btn">Rectangle</button>
+</div>
+
+<p id="modeInstructions" class="mode-instructions">
+  Classic mode: Draw the most perfect square you can. Width and height should match.
+</p>
 
   <div class="top-bar">
     <div class="stat">
@@ -20,10 +18,15 @@
     </div>
 
     <div class="stat">
-      <span>Score</span>
-      <strong id="score">--</strong>
-    </div>
+  <span>Perfection</span>
+  <strong id="score">--</strong>
+</div>
 
+<div class="stat">
+  <span>Leaderboard Score</span>
+  <strong id="finalScore">--</strong>
+</div>
+    
     <button id="startBtn">Start Game</button>
   </div>
 
@@ -58,8 +61,4 @@
     </div>
   </div>
 </div>
-    <script  src="./script.js"></script>
 
-  </body>
-  
-</html>
