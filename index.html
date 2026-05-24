@@ -3,34 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Perfect Square</title>
 
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Supabase browser client. This is okay to include publicly. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Your game code -->
   <script src="script.js" defer></script>
 </head>
 
 <body>
-  <div class="app">
+  <main class="app">
     <h1>Perfect Square</h1>
     <p class="subtitle">Click and drag to draw the most perfect shape you can.</p>
 
-    <div class="mode-tabs">
-      <button id="classicModeBtn" class="mode-btn active-mode">Classic</button>
-      <button id="rectangleModeBtn" class="mode-btn">Rectangle</button>
-      <button id="gauntletModeBtn" class="mode-btn">Square Gauntlet</button>
-    </div>
+    <nav class="mode-tabs" aria-label="Game modes">
+      <button id="classicModeBtn" class="mode-btn active-mode" type="button">Classic</button>
+      <button id="rectangleModeBtn" class="mode-btn" type="button">Rectangle</button>
+      <button id="gauntletModeBtn" class="mode-btn" type="button">Square Gauntlet</button>
+    </nav>
 
     <p id="modeInstructions" class="mode-instructions">
       Classic mode: Draw the most perfect square you can. Width and height should match.
     </p>
 
-    <div class="account-panel">
+    <section class="account-panel" aria-label="Account">
       <div id="loggedOutPanel">
-        <input id="emailInput" type="email" placeholder="Email" />
-        <input id="passwordInput" type="password" placeholder="Password" />
-        <button id="createAccountBtn">Create Account</button>
-        <button id="emailLoginBtn">Log In</button>
+        <input
+          id="emailInput"
+          type="email"
+          placeholder="Email"
+          autocomplete="email"
+        />
+
+        <input
+          id="passwordInput"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+
+        <button id="createAccountBtn" type="button">Create Account</button>
+        <button id="emailLoginBtn" type="button">Log In</button>
+
         <p class="small-note">
           You can play without signing in, but only signed-in players can submit leaderboard scores.
         </p>
@@ -38,13 +56,13 @@
 
       <div id="loggedInPanel" class="hidden">
         Logged in as <strong id="currentUsername">---</strong>
-        <button id="logoutBtn">Log Out</button>
+        <button id="logoutBtn" type="button">Log Out</button>
       </div>
 
       <p id="authStatus" class="small-note"></p>
-    </div>
+    </section>
 
-    <div class="top-bar">
+    <section class="top-bar" aria-label="Game stats">
       <div class="stat">
         <span>Time</span>
         <strong id="time">10.0</strong>
@@ -60,20 +78,22 @@
         <strong id="finalScore">--</strong>
       </div>
 
-      <button id="startBtn">Start Game</button>
-    </div>
+      <button id="startBtn" type="button">Start Game</button>
+    </section>
 
-    <div id="gameArea">
+    <section id="gameArea" aria-label="Game drawing area">
       <div id="gauntletTargetDisplay" class="gauntlet-target hidden">80%</div>
       <div id="rectangle"></div>
-    </div>
+    </section>
 
-    <div class="results">
+    <section class="results" aria-label="Results">
       <p id="message">Press Start Game, then click and drag inside the box.</p>
       <p id="dimensions"></p>
 
       <div class="submit-panel">
-        <button id="submitScoreBtn" class="hidden">Submit Score to Leaderboard</button>
+        <button id="submitScoreBtn" class="hidden" type="button">
+          Submit Score to Leaderboard
+        </button>
         <p id="submitStatus"></p>
       </div>
 
@@ -102,17 +122,17 @@
       <div class="leaderboard-panel">
         <h2>Leaderboard</h2>
 
-        <div class="leaderboard-tabs">
-          <button id="classicLeaderboardBtn">Classic</button>
-          <button id="rectangleLeaderboardBtn">Rectangle</button>
-          <button id="gauntletLeaderboardBtn">Square Gauntlet</button>
+        <div class="leaderboard-tabs" aria-label="Leaderboard modes">
+          <button id="classicLeaderboardBtn" type="button">Classic</button>
+          <button id="rectangleLeaderboardBtn" type="button">Rectangle</button>
+          <button id="gauntletLeaderboardBtn" type="button">Square Gauntlet</button>
         </div>
 
         <ol id="leaderboardList">
           <li>Leaderboard not loaded yet.</li>
         </ol>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </body>
 </html>
