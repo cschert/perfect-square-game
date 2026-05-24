@@ -6,13 +6,14 @@
   <title>Perfect Square</title>
 
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js" defer></script>
 </head>
 
 <body>
   <div class="app">
     <h1>Perfect Square</h1>
-    <p class="subtitle">Click and drag to draw the most perfect square you can.</p>
+    <p class="subtitle">Click and drag to draw the most perfect shape you can.</p>
 
     <div class="mode-tabs">
       <button id="classicModeBtn" class="mode-btn active-mode">Classic</button>
@@ -23,6 +24,25 @@
     <p id="modeInstructions" class="mode-instructions">
       Classic mode: Draw the most perfect square you can. Width and height should match.
     </p>
+
+    <div class="account-panel">
+      <div id="loggedOutPanel">
+        <input id="emailInput" type="email" placeholder="Email" />
+        <input id="passwordInput" type="password" placeholder="Password" />
+        <button id="createAccountBtn">Create Account</button>
+        <button id="emailLoginBtn">Log In</button>
+        <p class="small-note">
+          You can play without signing in, but only signed-in players can submit leaderboard scores.
+        </p>
+      </div>
+
+      <div id="loggedInPanel" class="hidden">
+        Logged in as <strong id="currentUsername">---</strong>
+        <button id="logoutBtn">Log Out</button>
+      </div>
+
+      <p id="authStatus" class="small-note"></p>
+    </div>
 
     <div class="top-bar">
       <div class="stat">
@@ -52,6 +72,11 @@
       <p id="message">Press Start Game, then click and drag inside the box.</p>
       <p id="dimensions"></p>
 
+      <div class="submit-panel">
+        <button id="submitScoreBtn" class="hidden">Submit Score to Leaderboard</button>
+        <p id="submitStatus"></p>
+      </div>
+
       <div id="comparison" class="comparison hidden">
         <h2>Side Length Comparison</h2>
 
@@ -72,6 +97,20 @@
         </div>
 
         <p id="differenceText"></p>
+      </div>
+
+      <div class="leaderboard-panel">
+        <h2>Leaderboard</h2>
+
+        <div class="leaderboard-tabs">
+          <button id="classicLeaderboardBtn">Classic</button>
+          <button id="rectangleLeaderboardBtn">Rectangle</button>
+          <button id="gauntletLeaderboardBtn">Square Gauntlet</button>
+        </div>
+
+        <ol id="leaderboardList">
+          <li>Leaderboard not loaded yet.</li>
+        </ol>
       </div>
     </div>
   </div>
