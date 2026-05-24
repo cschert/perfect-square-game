@@ -1,3 +1,17 @@
+const SUPABASE_URL = "https://fgyqmoilxgprmkqfkhru.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZneXFtb2lseGdwcm1rcWZraHJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NTgzNDcsImV4cCI6MjA5NTEzNDM0N30.t0hb8xzhdho8DfJPEl6rvKdhSIMpGh_M8fTMPHL1VDM"; 
+const WORKER_API_URL = "https://perfect-square-api.calchertavian.workers.dev";
+
+const onlineConfigured =
+  !SUPABASE_URL.includes("PASTE_") &&
+  !SUPABASE_ANON_KEY.includes("PASTE_") &&
+  !WORKER_API_URL.includes("PASTE_") &&
+  window.supabase;
+
+const supabaseClient = onlineConfigured
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
 const gameArea = document.getElementById("gameArea");
 const rectangle = document.getElementById("rectangle");
 const startBtn = document.getElementById("startBtn");
@@ -21,10 +35,33 @@ const rectangleModeBtn = document.getElementById("rectangleModeBtn");
 const gauntletModeBtn = document.getElementById("gauntletModeBtn");
 const modeInstructions = document.getElementById("modeInstructions");
 
+const gauntletTargetDisplay = document.getElementById("gauntletTargetDisplay");
+
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const createAccountBtn = document.getElementById("createAccountBtn");
+const emailLoginBtn = document.getElementById("emailLoginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loggedOutPanel = document.getElementById("loggedOutPanel");
+const loggedInPanel = document.getElementById("loggedInPanel");
+const currentUsername = document.getElementById("currentUsername");
+const authStatus = document.getElementById("authStatus");
+
+const submitScoreBtn = document.getElementById("submitScoreBtn");
+const submitStatus = document.getElementById("submitStatus");
+
+const classicLeaderboardBtn = document.getElementById("classicLeaderboardBtn");
+const rectangleLeaderboardBtn = document.getElementById("rectangleLeaderboardBtn");
+const gauntletLeaderboardBtn = document.getElementById("gauntletLeaderboardBtn");
+const leaderboardList = document.getElementById("leaderboardList");
+
 const scoreLabel = scoreDisplay.previousElementSibling;
 const finalScoreLabel = finalScoreDisplay.previousElementSibling;
 
 let currentMode = "classic";
+let currentUser = null;
+let currentDisplayName = "";
+let lastScoreResult = null;
 
 let isPlaying = false;
 let isDrawing = false;
@@ -44,9 +81,6 @@ let gauntletScore = 0;
 let gauntletTargetIndex = 0;
 let gauntletCurrentTimeLimit = GAUNTLET_START_TIME_SECONDS;
 
-const gauntletTargetDisplay = createGauntletTargetDisplay();
-injectGauntletTargetStyles();
-
 startBtn.addEventListener("click", () => {
   startGame();
 });
@@ -63,69 +97,283 @@ gauntletModeBtn.addEventListener("click", () => {
   switchMode("gauntlet");
 });
 
-function createGauntletTargetDisplay() {
-  let display = document.getElementById("gauntletTargetDisplay");
+createAccountBtn.addEventListener("click", async () => {
+  await createAccountWithEmail();
+});
 
-  if (!display) {
-    display = document.createElement("div");
-    display.id = "gauntletTargetDisplay";
-    display.classList.add("gauntlet-target", "hidden");
-    display.textContent = "80%";
-    gameArea.prepend(display);
+emailLoginBtn.addEventListener("click", async () => {
+  await signInWithEmail();
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await signOut();
+});
+
+submitScoreBtn.addEventListener("click", async () => {
+  await submitLastScore();
+});
+
+classicLeaderboardBtn.addEventListener("click", () => {
+  loadLeaderboard("classic");
+});
+
+rectangleLeaderboardBtn.addEventListener("click", () => {
+  loadLeaderboard("rectangle");
+});
+
+gauntletLeaderboardBtn.addEventListener("click", () => {
+  loadLeaderboard("gauntlet");
+});
+
+initializeOnlineFeatures();
+
+async function initializeOnlineFeatures() {
+  if (!onlineConfigured) {
+    authStatus.textContent =
+      "Online leaderboard is not configured yet. Game still works locally.";
+    leaderboardList.innerHTML = "<li>Configure Supabase and Cloudflare to load scores.</li>";
+    updateSubmitButtonVisibility();
+    return;
   }
 
-  return display;
+  const { data } = await supabaseClient.auth.getSession();
+
+  if (data.session?.user) {
+    currentUser = data.session.user;
+    currentDisplayName = formatDisplayName(currentUser);
+  }
+
+  updateAuthUI();
+  await loadLeaderboard("classic");
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    currentUser = session?.user || null;
+    currentDisplayName = currentUser ? formatDisplayName(currentUser) : "";
+    updateAuthUI();
+  });
 }
 
-function injectGauntletTargetStyles() {
-  const style = document.createElement("style");
+async function createAccountWithEmail() {
+  if (!onlineConfigured) {
+    authStatus.textContent =
+      "Add your Supabase URL, Supabase anon key, and Cloudflare Worker URL first.";
+    return;
+  }
 
-  style.textContent = `
-    .gauntlet-target {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(80px, 18vw, 180px);
-      font-weight: 900;
-      color: rgba(17, 24, 39, 0.16);
-      pointer-events: none;
-      z-index: 1;
-      user-select: none;
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || password.length < 6) {
+    authStatus.textContent = "Enter an email and a password with at least 6 characters.";
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    authStatus.textContent = error.message;
+    return;
+  }
+
+  if (!data.session) {
+    authStatus.textContent =
+      "Account created. Check your email to confirm your account, then log in.";
+    return;
+  }
+
+  currentUser = data.session.user;
+  currentDisplayName = formatDisplayName(currentUser);
+  authStatus.textContent = "Account created. You are logged in.";
+  updateAuthUI();
+}
+
+async function signInWithEmail() {
+  if (!onlineConfigured) {
+    authStatus.textContent =
+      "Add your Supabase URL, Supabase anon key, and Cloudflare Worker URL first.";
+    return;
+  }
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    authStatus.textContent = "Enter your email and password.";
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    authStatus.textContent = error.message;
+    return;
+  }
+
+  currentUser = data.user;
+  currentDisplayName = formatDisplayName(data.user);
+
+  authStatus.textContent = "Logged in.";
+  updateAuthUI();
+}
+
+async function signOut() {
+  if (!onlineConfigured) return;
+
+  await supabaseClient.auth.signOut();
+
+  currentUser = null;
+  currentDisplayName = "";
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  if (currentUser) {
+    loggedOutPanel.classList.add("hidden");
+    loggedInPanel.classList.remove("hidden");
+    currentUsername.textContent = currentDisplayName;
+  } else {
+    loggedOutPanel.classList.remove("hidden");
+    loggedInPanel.classList.add("hidden");
+    currentUsername.textContent = "---";
+  }
+
+  updateSubmitButtonVisibility();
+}
+
+function updateSubmitButtonVisibility() {
+  if (currentUser && lastScoreResult) {
+    submitScoreBtn.classList.remove("hidden");
+  } else {
+    submitScoreBtn.classList.add("hidden");
+  }
+}
+
+async function submitLastScore() {
+  if (!onlineConfigured) {
+    submitStatus.textContent = "Online leaderboard is not configured yet.";
+    return;
+  }
+
+  if (!currentUser) {
+    submitStatus.textContent = "Log in first.";
+    return;
+  }
+
+  if (!lastScoreResult) {
+    submitStatus.textContent = "Play a round first.";
+    return;
+  }
+
+  const { data } = await supabaseClient.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    submitStatus.textContent = "Your session expired. Log in again.";
+    return;
+  }
+
+  submitStatus.textContent = "Submitting score...";
+
+  try {
+    const response = await fetch(`${WORKER_API_URL}/score`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        ...lastScoreResult,
+        username: currentDisplayName
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      submitStatus.textContent = result.error || "Could not submit score.";
+      return;
     }
 
-    .gauntlet-target.hidden {
-      display: none;
+    submitStatus.textContent = "Score submitted!";
+    submitScoreBtn.classList.add("hidden");
+
+    await loadLeaderboard(lastScoreResult.mode);
+  } catch (error) {
+    submitStatus.textContent = "Could not reach leaderboard server.";
+  }
+}
+
+async function loadLeaderboard(mode) {
+  if (!onlineConfigured) {
+    leaderboardList.innerHTML = "<li>Online leaderboard is not configured yet.</li>";
+    return;
+  }
+
+  leaderboardList.innerHTML = "<li>Loading...</li>";
+
+  try {
+    const response = await fetch(`${WORKER_API_URL}/leaderboard?mode=${mode}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      leaderboardList.innerHTML = "<li>Could not load leaderboard.</li>";
+      return;
     }
 
-    .gauntlet-target.flash-target {
-      animation: targetFlash 0.35s ease;
+    const rows = result.leaderboard || [];
+
+    if (rows.length === 0) {
+      leaderboardList.innerHTML = "<li>No scores yet.</li>";
+      return;
     }
 
-    @keyframes targetFlash {
-      0% {
-        transform: scale(0.92);
-        opacity: 0.45;
-      }
+    leaderboardList.innerHTML = rows
+      .map((row) => {
+        const scoreText =
+          row.mode === "gauntlet"
+            ? `${Number(row.score).toFixed(0)} clears`
+            : `${Number(row.score).toFixed(3)}`;
 
-      60% {
-        transform: scale(1.08);
-        opacity: 1;
-      }
+        return `<li><strong>${escapeHtml(row.username)}</strong> — ${scoreText}</li>`;
+      })
+      .join("");
+  } catch (error) {
+    leaderboardList.innerHTML = "<li>Could not reach leaderboard server.</li>";
+  }
+}
 
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
+function formatDisplayName(user) {
+  const metadata = user.user_metadata || {};
+  const rawName =
+    metadata.name ||
+    metadata.full_name ||
+    user.email ||
+    "Player";
 
-    #rectangle {
-      z-index: 2;
-    }
-  `;
+  if (String(rawName).includes("@")) {
+    return formatDisplayNameFromEmail(rawName);
+  }
 
-  document.head.appendChild(style);
+  return String(rawName).trim();
+}
+
+function formatDisplayNameFromEmail(email) {
+  return String(email).split("@")[0];
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function switchMode(mode) {
@@ -201,6 +449,8 @@ function startGame() {
   isPlaying = true;
   isDrawing = false;
   hasFinishedRound = false;
+  lastScoreResult = null;
+  updateSubmitButtonVisibility();
 
   if (currentMode === "gauntlet") {
     gauntletScore = 0;
@@ -211,6 +461,7 @@ function startGame() {
   startRoundTimer(getCurrentTimeLimit());
   resetShapeAndComparison();
 
+  submitStatus.textContent = "";
   scoreDisplay.textContent = "--";
 
   if (currentMode === "gauntlet") {
@@ -280,6 +531,8 @@ function resetRoundDisplay() {
   isPlaying = false;
   isDrawing = false;
   hasFinishedRound = false;
+  lastScoreResult = null;
+  updateSubmitButtonVisibility();
 
   clearInterval(timer);
 
@@ -329,6 +582,19 @@ function endGameFromTimer() {
     if (currentMode === "gauntlet") {
       message.textContent = `Time is up! Final Gauntlet Score: ${gauntletScore}.`;
       dimensions.textContent = `You reached the ${getGauntletTarget()}% target. Press Restart or drag again to retry.`;
+
+      if (gauntletScore > 0) {
+        lastScoreResult = {
+          mode: "gauntlet",
+          score: gauntletScore,
+          perfection: null,
+          time_seconds: null,
+          width: null,
+          height: null
+        };
+
+        updateSubmitButtonVisibility();
+      }
     } else {
       message.textContent = "Time is up! Press Restart or drag again to try again.";
     }
@@ -451,6 +717,17 @@ function finishDrawing() {
   dimensions.textContent =
     `Width: ${width.toFixed(2)}px | Height: ${height.toFixed(2)}px | Time: ${timeUsed.toFixed(2)}s`;
 
+  lastScoreResult = {
+    mode: currentMode,
+    score: leaderboardScore,
+    perfection: perfectionScore,
+    time_seconds: timeUsed,
+    width,
+    height
+  };
+
+  updateSubmitButtonVisibility();
+
   setResultMessage(perfectionScore, leaderboardScore);
   prepareComparisonPanel(width, height, speedScore, leaderboardScore);
   animateRectangleBreakApart(drawnRect, width, height);
@@ -479,6 +756,9 @@ function finishGauntletAttempt(width, height) {
     comparison.classList.add("hidden");
     removeOldFloatingLines();
 
+    lastScoreResult = null;
+    updateSubmitButtonVisibility();
+
     startRoundTimer(gauntletCurrentTimeLimit);
     isPlaying = true;
     isDrawing = false;
@@ -496,6 +776,17 @@ function finishGauntletAttempt(width, height) {
 
   dimensions.textContent =
     `Final Gauntlet Score: ${gauntletScore} | Last target: ${target}% | Press Restart or drag again to retry.`;
+
+  lastScoreResult = {
+    mode: "gauntlet",
+    score: gauntletScore,
+    perfection: perfectionScore,
+    time_seconds: null,
+    width,
+    height
+  };
+
+  updateSubmitButtonVisibility();
 }
 
 function advanceGauntletTarget() {
